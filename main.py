@@ -11,14 +11,25 @@ class CANMonitorApp(QMainWindow):
 
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("CAN Monitor")
+        self.setWindowTitle("CAN Analyzer")
         self.setGeometry(300, 150, 600, 400)
         self.text_edit = QTextEdit()
         self.timer = QTimer(self)
         self.can_bus = None
 
+        self.left_turn_label = QLabel()
+        self.right_turn_label = QLabel()
+        self.car_label = QLabel()
 
-        self.pixmap = QPixmap('kierunkowskaz lewy 50.png')
+        self.left_turn_light = QPixmap('kierunkowskaz lewy 50.png')
+        self.right_turn_light = QPixmap('kierunkowskaz prawy 50.png')
+        self.car_icon = QPixmap('pojazd.png')
+
+        self.right_turn_label.setPixmap(self.right_turn_light)
+        self.left_turn_label.setPixmap(self.left_turn_light)
+        self.car_label.setPixmap(self.car_icon)
+
+        # self.left_turn_label.resize(self.left_turn_light.width(), self.left_turn_light.height())
 
         # Create main widget
         self.central_widget = QWidget()
@@ -30,10 +41,14 @@ class CANMonitorApp(QMainWindow):
 
         # Create text_edit panel (CAN analyzer) and buttons
         text_edit_groupbox = self. create_can_analyzer_groupbox()
-        main_layout.addWidget(text_edit_groupbox, 0, 0)
+        main_layout.addWidget(text_edit_groupbox, 0, 0, 2, 2)
 
         buttons_groupbox = self.create_button_groupbox()
-        main_layout.addWidget(buttons_groupbox, 1, 0)
+        main_layout.addWidget(buttons_groupbox, 2, 0, 2, 2)
+
+        main_layout.addWidget(self.left_turn_label, 0, 3)
+        main_layout.addWidget(self.right_turn_label, 0, 7)
+        main_layout.addWidget(self.car_label, 1, 4, 3, 6)
 
     def create_can_analyzer_groupbox(self):
         text_edit_groupbox = QGroupBox("CAN frames monitor")
