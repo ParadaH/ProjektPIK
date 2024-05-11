@@ -87,16 +87,16 @@ class CANMonitorApp(QMainWindow):
         dipped_beam_lights_label = QLabel()
 
         # Set path to icon
-        left_turn_light = QPixmap('kierunkowskaz lewy.png')
-        right_turn_light = QPixmap('kierunkowskaz prawy.png')
-        main_beam_light = QPixmap('swiatlo drogowe.png')
-        dipped_beam_light = QPixmap('swiatlo mijania.png')
+        left_turn_lights = QPixmap('left_turn_light.png')
+        right_turn_lights = QPixmap('right_turn_light.png')
+        main_beam_lights = QPixmap('main_beam_lights.png')
+        dipped_beam_lights = QPixmap('dipped_beam_lights.png')
 
         # Load image icon
-        right_turn_label.setPixmap(right_turn_light)
-        left_turn_label.setPixmap(left_turn_light)
-        main_beam_lights_label.setPixmap(main_beam_light)
-        dipped_beam_lights_label.setPixmap(dipped_beam_light)
+        right_turn_label.setPixmap(right_turn_lights)
+        left_turn_label.setPixmap(left_turn_lights)
+        main_beam_lights_label.setPixmap(main_beam_lights)
+        dipped_beam_lights_label.setPixmap(dipped_beam_lights)
 
         car_lights_layout.addWidget(main_beam_lights_label)
         car_lights_layout.addWidget(left_turn_label)
