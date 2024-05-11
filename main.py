@@ -77,7 +77,7 @@ class CANMonitorApp(QMainWindow):
         return buttons_groupbox
 
     def create_car_lights_groupbox(self):
-        car_lights_groupbox = QGroupBox("Turn lights")
+        car_lights_groupbox = QGroupBox("Car lights")
         car_lights_layout = QHBoxLayout()
         car_lights_groupbox.setLayout(car_lights_layout)
 
