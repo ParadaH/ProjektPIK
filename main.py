@@ -2,8 +2,9 @@ import sys
 
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QTextEdit, QDialog, QGridLayout, QWidget, \
-    QHBoxLayout, QTabWidget, QVBoxLayout, QGroupBox, QLabel, QStyleFactory, QComboBox
-from PyQt5.QtCore import QTimer
+    QHBoxLayout, QTabWidget, QVBoxLayout, QGroupBox, QLabel, QStyleFactory, QComboBox, QProgressBar, \
+    QGraphicsOpacityEffect
+from PyQt5.QtCore import QTimer, QPropertyAnimation, QPoint
 import can
 
 
@@ -17,20 +18,6 @@ class CANMonitorApp(QMainWindow):
         self.timer = QTimer(self)
         self.can_bus = None
 
-        self.left_turn_label = QLabel()
-        self.right_turn_label = QLabel()
-        self.car_label = QLabel()
-
-        self.left_turn_light = QPixmap('kierunkowskaz lewy 50.png')
-        self.right_turn_light = QPixmap('kierunkowskaz prawy 50.png')
-        self.car_icon = QPixmap('pojazd.png')
-
-        self.right_turn_label.setPixmap(self.right_turn_light)
-        self.left_turn_label.setPixmap(self.left_turn_light)
-        self.car_label.setPixmap(self.car_icon)
-
-        # self.left_turn_label.resize(self.left_turn_light.width(), self.left_turn_light.height())
-
         # Create main widget
         self.central_widget = QWidget()
         self.setCentralWidget(self.central_widget)
@@ -41,14 +28,24 @@ class CANMonitorApp(QMainWindow):
 
         # Create text_edit panel (CAN analyzer) and buttons
         text_edit_groupbox = self. create_can_analyzer_groupbox()
-        main_layout.addWidget(text_edit_groupbox, 0, 0, 2, 2)
+        main_layout.addWidget(text_edit_groupbox, 0, 0, 4, 2)
 
         buttons_groupbox = self.create_button_groupbox()
-        main_layout.addWidget(buttons_groupbox, 2, 0, 2, 2)
+        main_layout.addWidget(buttons_groupbox, 4, 0, 1, 2)
 
-        main_layout.addWidget(self.left_turn_label, 0, 3)
-        main_layout.addWidget(self.right_turn_label, 0, 7)
-        main_layout.addWidget(self.car_label, 1, 4, 3, 6)
+        car_lights_groupbox = self.create_car_lights_groupbox()
+        main_layout.addWidget(car_lights_groupbox, 0, 3, 1, 2)
+
+        car_miniatures_groupbox = self.create_car_miniatures_groupbox()
+        main_layout.addWidget(car_miniatures_groupbox,1, 3, 3, 2)
+
+        left_window_groupbox = self.create_left_window_groupbox()
+        main_layout.addWidget(left_window_groupbox, 4, 3, 1, 1)
+
+        right_window_groupbox = self.create_right_window_groupbox()
+        main_layout.addWidget(right_window_groupbox, 4, 4)
+
+
 
     def create_can_analyzer_groupbox(self):
         text_edit_groupbox = QGroupBox("CAN frames monitor")
@@ -79,10 +76,87 @@ class CANMonitorApp(QMainWindow):
 
         return buttons_groupbox
 
+    def create_car_lights_groupbox(self):
+        car_lights_groupbox = QGroupBox("Turn lights")
+        car_lights_layout = QHBoxLayout()
+        car_lights_groupbox.setLayout(car_lights_layout)
+
+        left_turn_label = QLabel()
+        right_turn_label = QLabel()
+        main_beam_lights_label = QLabel()
+        dipped_beam_lights_label = QLabel()
+
+        # Set path to icon
+        left_turn_light = QPixmap('kierunkowskaz lewy.png')
+        right_turn_light = QPixmap('kierunkowskaz prawy.png')
+        main_beam_light = QPixmap('swiatlo drogowe.png')
+        dipped_beam_light = QPixmap('swiatlo mijania.png')
+
+        # Load image icon
+        right_turn_label.setPixmap(right_turn_light)
+        left_turn_label.setPixmap(left_turn_light)
+        main_beam_lights_label.setPixmap(main_beam_light)
+        dipped_beam_lights_label.setPixmap(dipped_beam_light)
+
+        car_lights_layout.addWidget(main_beam_lights_label)
+        car_lights_layout.addWidget(left_turn_label)
+        car_lights_layout.addWidget(right_turn_label)
+        car_lights_layout.addWidget(dipped_beam_lights_label)
+
+        return car_lights_groupbox
+
+    def create_car_miniatures_groupbox(self):
+        car_miniature_groupbox = QGroupBox("Car")
+        car_miniature_layout = QHBoxLayout()
+        car_miniature_groupbox.setLayout(car_miniature_layout)
+
+        car_label = QLabel()
+        car_icon = QPixmap('porsche.png')
+        car_label.setPixmap(car_icon)
+
+        car_miniature_layout.addStretch(1)
+        car_miniature_layout.addWidget(car_label)
+        car_miniature_layout.addStretch(1)
+
+        return car_miniature_groupbox
+
+    def create_left_window_groupbox(self):
+        left_window_groupbox = QGroupBox("Left window")
+        left_window_layout = QVBoxLayout()
+        left_window_groupbox.setLayout(left_window_layout)
+
+        left_window = QProgressBar()
+        left_window.setOrientation(0)
+        left_window.setMinimum(0)
+        left_window.setMaximum(100)
+        left_window.setValue(100)
+
+        left_window_layout.addWidget(left_window)
+
+        return left_window_groupbox
+
+    def create_right_window_groupbox(self):
+        right_window_groupbox = QGroupBox("Right window")
+        right_window_layout = QVBoxLayout()
+        right_window_groupbox.setLayout(right_window_layout)
+
+        right_window = QProgressBar()
+        right_window.setOrientation(0)
+        right_window.setMinimum(0)
+        right_window.setMaximum(100)
+        right_window.setValue(33)
+
+        right_window_layout.addWidget(right_window)
+
+        return right_window_groupbox
+
+#    def blink_light(self):
+
+
     def start_can_monitor(self):
         if not self.can_bus:
             try:
-                self.can_bus = can.interface.Bus(bustype='pcan', channel='PCAN_USBBUS1', bitrate=125000)
+                self.can_bus = can.interface.Bus(bustype='pcan', channel='PCAN_USBBUS1', bitrate=500000)
                 self.text_edit.append("CAN Monitor started...")
                 self.timer.timeout.connect(self.receive_can_frames)
                 self.timer.start(3000)
