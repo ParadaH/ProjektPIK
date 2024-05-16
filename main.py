@@ -12,11 +12,15 @@ class CANMonitorApp(QMainWindow):
 
     def __init__(self):
         super().__init__()
+
         self.setWindowTitle("CAN Analyzer")
         self.setGeometry(300, 150, 600, 400)
         self.text_edit = QTextEdit()
         self.timer = QTimer(self)
         self.can_bus = None
+        self.driver_window = QProgressBar()
+        self.passenger_window = QProgressBar()
+        self.fuel_tank = QProgressBar()
 
         # Create main widget
         self.central_widget = QWidget()
@@ -28,24 +32,28 @@ class CANMonitorApp(QMainWindow):
 
         # Create text_edit panel (CAN analyzer) and buttons
         text_edit_groupbox = self. create_can_analyzer_groupbox()
-        main_layout.addWidget(text_edit_groupbox, 0, 0, 4, 2)
+        main_layout.addWidget(text_edit_groupbox, 0, 0, 4, 3)
 
         buttons_groupbox = self.create_button_groupbox()
-        main_layout.addWidget(buttons_groupbox, 4, 0, 1, 2)
+        main_layout.addWidget(buttons_groupbox, 4, 0, 1, 3)
+
+        test_buttons_groupbox = self.create_test_buttons_groupbox()
+        main_layout.addWidget(test_buttons_groupbox, 5, 0, 1, 2)
 
         car_lights_groupbox = self.create_car_lights_groupbox()
         main_layout.addWidget(car_lights_groupbox, 0, 3, 1, 2)
 
-        car_miniatures_groupbox = self.create_car_miniatures_groupbox()
-        main_layout.addWidget(car_miniatures_groupbox,1, 3, 3, 2)
+        car_miniature_groupbox = self.create_car_miniature_groupbox()
+        main_layout.addWidget(car_miniature_groupbox,1, 3, 3, 2)
 
-        left_window_groupbox = self.create_left_window_groupbox()
-        main_layout.addWidget(left_window_groupbox, 4, 3, 1, 1)
+        driver_window_groupbox = self.create_driver_window_groupbox()
+        main_layout.addWidget(driver_window_groupbox, 4, 3, 1, 1)
 
-        right_window_groupbox = self.create_right_window_groupbox()
-        main_layout.addWidget(right_window_groupbox, 4, 4)
+        passenger_window_groupbox = self.create_passenger_window_groupbox()
+        main_layout.addWidget(passenger_window_groupbox, 4, 4, 1, 1)
 
-
+        fuel_tank_groupbox = self.create_fuel_tank_indicator_groupbox()
+        main_layout.addWidget(fuel_tank_groupbox, 0, 5, 5, 1)
 
     def create_can_analyzer_groupbox(self):
         text_edit_groupbox = QGroupBox("CAN frames monitor")
@@ -76,36 +84,73 @@ class CANMonitorApp(QMainWindow):
 
         return buttons_groupbox
 
+    def create_test_buttons_groupbox(self):
+        buttons_groupbox = QGroupBox("Przyciski testowe")
+        buttons_layout = QHBoxLayout()
+        buttons_groupbox.setLayout(buttons_layout)
+
+        test1 = QPushButton("Set driver window to 50%", self)
+        test2 = QPushButton("Set driver window to 75%", self)
+        test3 = QPushButton("Turn on main beam lights", self)
+        test4 = QPushButton("Turn off main beam lights", self)
+
+        value1 = int('80', 16)
+        value2 = int('C0', 16)
+        test1.clicked.connect(lambda: self.update_progress_bar(0, value1))
+        test2.clicked.connect(lambda: self.update_progress_bar(0, value2))
+        test3.clicked.connect(lambda: self.update_lights_status(0, 3))
+        test4.clicked.connect(lambda: self.update_lights_status(0, 1))
+        buttons_layout.addWidget(test1)
+        buttons_layout.addWidget(test2)
+        buttons_layout.addWidget(test3)
+        buttons_layout.addWidget(test4)
+
+        return buttons_groupbox
+
     def create_car_lights_groupbox(self):
         car_lights_groupbox = QGroupBox("Car lights")
         car_lights_layout = QHBoxLayout()
         car_lights_groupbox.setLayout(car_lights_layout)
 
-        left_turn_label = QLabel()
-        right_turn_label = QLabel()
-        main_beam_lights_label = QLabel()
-        dipped_beam_lights_label = QLabel()
+        self.left_turn_label = QLabel()
+        self.right_turn_label = QLabel()
+        self.main_beam_lights_label = QLabel()
+        self.dipped_beam_lights_label = QLabel()
 
         # Set path to icon
-        left_turn_lights = QPixmap('left_turn_light.png')
-        right_turn_lights = QPixmap('right_turn_light.png')
-        main_beam_lights = QPixmap('main_beam_lights.png')
-        dipped_beam_lights = QPixmap('dipped_beam_lights.png')
+        self.left_turn_lights = QPixmap('left_turn_light.png')
+        self.right_turn_lights = QPixmap('right_turn_light.png')
+        self.main_beam_lights = QPixmap('main_beam_lights.png')
+        self.dipped_beam_lights = QPixmap('dipped_beam_lights.png')
 
         # Load image icon
-        right_turn_label.setPixmap(right_turn_lights)
-        left_turn_label.setPixmap(left_turn_lights)
-        main_beam_lights_label.setPixmap(main_beam_lights)
-        dipped_beam_lights_label.setPixmap(dipped_beam_lights)
+        self.right_turn_label.setPixmap(self.right_turn_lights)
+        self.left_turn_label.setPixmap(self.left_turn_lights)
+        self.main_beam_lights_label.setPixmap(self.main_beam_lights)
+        self.dipped_beam_lights_label.setPixmap(self.dipped_beam_lights)
 
-        car_lights_layout.addWidget(main_beam_lights_label)
-        car_lights_layout.addWidget(left_turn_label)
-        car_lights_layout.addWidget(right_turn_label)
-        car_lights_layout.addWidget(dipped_beam_lights_label)
+        self.opacity_effects = []
+        self.opacities = []
+
+        labels = [self.left_turn_label, self.right_turn_label, self.main_beam_lights_label,
+                  self.dipped_beam_lights_label]
+
+        for label in labels:
+            opacity_effect = QGraphicsOpacityEffect()
+            label.setGraphicsEffect(opacity_effect)
+            opacity_effect.setOpacity(0.2)
+
+            self.opacity_effects.append(opacity_effect)
+            self.opacities.append(0.2)
+
+        car_lights_layout.addWidget(self.main_beam_lights_label)
+        car_lights_layout.addWidget(self.left_turn_label)
+        car_lights_layout.addWidget(self.right_turn_label)
+        car_lights_layout.addWidget(self.dipped_beam_lights_label)
 
         return car_lights_groupbox
 
-    def create_car_miniatures_groupbox(self):
+    def create_car_miniature_groupbox(self):
         car_miniature_groupbox = QGroupBox("Car")
         car_miniature_layout = QHBoxLayout()
         car_miniature_groupbox.setLayout(car_miniature_layout)
@@ -120,38 +165,70 @@ class CANMonitorApp(QMainWindow):
 
         return car_miniature_groupbox
 
-    def create_left_window_groupbox(self):
-        left_window_groupbox = QGroupBox("Left window")
-        left_window_layout = QVBoxLayout()
-        left_window_groupbox.setLayout(left_window_layout)
+    def create_driver_window_groupbox(self):
+        driver_window_groupbox = QGroupBox("Driver's window")
+        driver_window_layout = QVBoxLayout()
+        driver_window_groupbox.setLayout(driver_window_layout)
 
-        left_window = QProgressBar()
-        left_window.setOrientation(0)
-        left_window.setMinimum(0)
-        left_window.setMaximum(100)
-        left_window.setValue(100)
+        self.driver_window.setOrientation(0)
+        self.driver_window.setMinimum(0)
+        self.driver_window.setMaximum(255)
+        self.driver_window.setValue(255)
 
-        left_window_layout.addWidget(left_window)
+        driver_window_layout.addWidget(self.driver_window)
 
-        return left_window_groupbox
+        return driver_window_groupbox
 
-    def create_right_window_groupbox(self):
-        right_window_groupbox = QGroupBox("Right window")
-        right_window_layout = QVBoxLayout()
-        right_window_groupbox.setLayout(right_window_layout)
+    def create_passenger_window_groupbox(self):
+        passenger_window_groupbox = QGroupBox("Passenger's window")
+        passenger_window_layout = QVBoxLayout()
+        passenger_window_groupbox.setLayout(passenger_window_layout)
 
-        right_window = QProgressBar()
-        right_window.setOrientation(0)
-        right_window.setMinimum(0)
-        right_window.setMaximum(100)
-        right_window.setValue(33)
+        self.passenger_window.setOrientation(0)
+        self.passenger_window.setMinimum(0)
+        self.passenger_window.setMaximum(255)
+        self.passenger_window.setValue(255)
 
-        right_window_layout.addWidget(right_window)
+        passenger_window_layout.addWidget(self.passenger_window)
 
-        return right_window_groupbox
+        return passenger_window_groupbox
 
-#    def blink_light(self):
+    def create_fuel_tank_indicator_groupbox(self):
+        fuel_tank_indicator_groupbox = QGroupBox("Petrol Tank Indicator")
+        fuel_tank_layout = QVBoxLayout()
+        fuel_tank_indicator_groupbox.setLayout(fuel_tank_layout)
 
+        self.fuel_tank.setOrientation(0)
+        self.fuel_tank.setMinimum(0)
+        self.fuel_tank.setMaximum(255)
+        self.fuel_tank.setValue(255)
+
+        fuel_tank_layout.addWidget(self.fuel_tank)
+
+        return fuel_tank_indicator_groupbox
+
+    def update_progress_bar(self, progressbar_id, value):
+        if progressbar_id == 0:
+            self.driver_window.setValue(value)
+            print("Updated driver's window to:", value/255 * 100, '%')
+        if progressbar_id == 1:
+            self.passenger_window.setValue(value)
+            print("Updated passenger window to:", value/255 * 100, '%')
+        if progressbar_id == 2:
+            self.fuel_tank.setValue(value)
+            print("Updated fuel tank to:", value/255 * 100, '%')
+
+    def update_lights_status(self, lights_id, value):
+        if lights_id == 0:
+            if value == 3:
+                self.opacity_effects[2].setOpacity(1.0) # main_beam_lights ON
+            if value == 1:
+                self.opacity_effects[2].setOpacity(0.2) # main_beam_lights OFF
+        if lights_id == 1:
+            if value == 1:
+                self.opacity_effects[3].setOpacity(1.0) # dipped_beam_lights ON
+            if value == 0:
+                self.opacity_effects[3].setOpacity(0.2) # dipped_beam_lights OFF
 
     def start_can_monitor(self):
         if not self.can_bus:
@@ -170,6 +247,7 @@ class CANMonitorApp(QMainWindow):
             self.timer.stop()
             self.text_edit.append("CAN Monitor stopped.")
 
+
     def clear_can_monitor(self):
         if not self.can_bus:
             self.text_edit.clear()
@@ -184,19 +262,19 @@ class CANMonitorApp(QMainWindow):
                 msg_dlc = msg.dlc
                 msg_bitrate = msg.bitrate_switch
 
-                self.analyze_can_frame(msg_timestamp, msg_id, msg_data)
+                self.analyze_can_frame(msg_id, msg_data)
 
             except Exception as exc:
                 self.text_edit.append("Error receiving CAN frame: " + str(exc))
 
-    def analyze_can_frame(self, msg_timestamp, msg_id, msg_data):
+    def analyze_can_frame(self, msg_id, msg_data):
         self.turn_lights_id = 2
         self.brake_lights_id = 3
         self.beam_lights_id = 4
         self.fuel_tank_id = 6
         self.inside_light_id = 9
-        self.driver_window = 13
-        self.passenger_window = 12
+        self.driver_window_id = 13
+        self.passenger_window_id = 12
 
         msg_data_array = bytearray(msg_data)
         msg_data_list = [byte for byte in msg_data_array]
@@ -204,14 +282,30 @@ class CANMonitorApp(QMainWindow):
         self.text_edit.append("Time: , ID={}, Data={}".format(msg_id, msg_data_list))
 
         if msg_id == self.turn_lights_id:
-            msg_data_array = bytearray(msg_data)
-            msg_data_list = [byte for byte in msg_data_array]
-            print(msg_data_list)
-            print("test swiatel awaryjnych")
+            print('Test kierunkowskazow. Dane:', msg_data_list)
             # if msg_data ==
 
             # wylaczone swiatla 00 40 80
             # zapalone swiatla 1F 40 80
+
+        if msg_id == self.fuel_tank_id:
+            print('Test zbiornika paliwa. Dane:', msg_data_list)
+
+        if msg_id == self.driver_window_id:
+            print('Test okna kierowcy. Dane:', msg_data_list)
+            driver_window_level = int('msg_data_list[0]', 16)
+            print(driver_window_level)
+            self.update_progress_bar(0, driver_window_level)
+
+        if msg_id == self.passenger_window:
+            print('Test okna pasazera. Dane:', msg_data_list)
+            passenger_window_level = int(f'msg_data_list[0]', 16)
+            print(passenger_window_level)
+            self.update_progress_bar(1, passenger_window_level)
+
+
+    # window_level = lambda hex_val: int((255 - int(hex_val, 16)) * 100 / 255)
+    # value = int('234', 16)
 
     # def send_can_frames(self):
     #     if self.can_bus:
