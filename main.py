@@ -173,8 +173,8 @@ class CANMonitorApp(QMainWindow):
 
         self.driver_window.setOrientation(0)
         self.driver_window.setMinimum(0)
-        self.driver_window.setMaximum(255)
-        self.driver_window.setValue(255)
+        self.driver_window.setMaximum(200)
+        self.driver_window.setValue(200)
 
         driver_window_layout.addWidget(self.driver_window)
 
@@ -187,8 +187,8 @@ class CANMonitorApp(QMainWindow):
 
         self.passenger_window.setOrientation(0)
         self.passenger_window.setMinimum(0)
-        self.passenger_window.setMaximum(255)
-        self.passenger_window.setValue(255)
+        self.passenger_window.setMaximum(200)
+        self.passenger_window.setValue(200)
 
         passenger_window_layout.addWidget(self.passenger_window)
 
@@ -211,11 +211,11 @@ class CANMonitorApp(QMainWindow):
     def update_progress_bar(self, progressbar_id, value):
         print(progressbar_id, value)
         if progressbar_id == 0:
-            self.driver_window.setValue(self, value)
-            print("Updated driver's window to:", value/255 * 100, '%')
+            value = int(value[1])
+            self.driver_window.setValue(value)
         if progressbar_id == 1:
-            self.passenger_window.setValue(self, value)
-            print("Updated passenger window to:", value/255 * 100, '%')
+            value = int(value[1])
+            self.passenger_window.setValue(value)
         if progressbar_id == 2:
             value = int(value[0])
             self.fuel_tank.setValue(value)
@@ -285,8 +285,8 @@ class CANMonitorApp(QMainWindow):
         self.beam_lights_id = 4
         self.fuel_tank_id = 6
         self.inside_light_id = 9
-        self.driver_window_id = 13
-        self.passenger_window_id = 12
+        self.driver_window_id = 12
+        self.passenger_window_id = 13
 
         msg_data_array = bytearray(msg_data)
         msg_data_list = [byte for byte in msg_data_array]
@@ -313,10 +313,7 @@ class CANMonitorApp(QMainWindow):
             self.update_progress_bar(2, msg_data_list)
 
         if msg_id == self.driver_window_id:
-            print('Test okna kierowcy. Dane:', msg_data_list)
-            driver_window_level = int('msg_data_list[0]', 16) # tu mozliwa bedzie zmiana
-            print(driver_window_level)
-            self.update_progress_bar(0, driver_window_level)
+            self.update_progress_bar(0, msg_data_list)
 
         if msg_id == self.passenger_window:
             print('Test okna pasazera. Dane:', msg_data_list)
