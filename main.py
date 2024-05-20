@@ -4,7 +4,7 @@ from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QTextEdit, QDialog, QGridLayout, QWidget, \
     QHBoxLayout, QTabWidget, QVBoxLayout, QGroupBox, QLabel, QStyleFactory, QComboBox, QProgressBar, \
     QGraphicsOpacityEffect
-from PyQt5.QtCore import QTimer, QPropertyAnimation, QPoint
+from PyQt5.QtCore import QTimer, QPropertyAnimation, QPoint, QThread, pyqtSignal
 import can
 
 
@@ -17,6 +17,7 @@ class CANMonitorApp(QMainWindow):
         self.setGeometry(300, 150, 600, 400)
         self.text_edit = QTextEdit()
         self.timer = QTimer(self)
+        self.turn_lights = QTimer(self)
         self.can_bus = None
         self.driver_window = QProgressBar()
         self.passenger_window = QProgressBar()
@@ -38,7 +39,7 @@ class CANMonitorApp(QMainWindow):
         main_layout.addWidget(buttons_groupbox, 4, 0, 1, 3)
 
         test_buttons_groupbox = self.create_test_buttons_groupbox()
-        main_layout.addWidget(test_buttons_groupbox, 5, 0, 1, 2)
+        main_layout.addWidget(test_buttons_groupbox, 5, 0, 1, 6)
 
         car_lights_groupbox = self.create_car_lights_groupbox()
         main_layout.addWidget(car_lights_groupbox, 0, 3, 1, 2)
@@ -208,15 +209,16 @@ class CANMonitorApp(QMainWindow):
         return fuel_tank_indicator_groupbox
 
     def update_progress_bar(self, progressbar_id, value):
+        print(progressbar_id, value)
         if progressbar_id == 0:
-            self.driver_window.setValue(value)
+            self.driver_window.setValue(self, value)
             print("Updated driver's window to:", value/255 * 100, '%')
         if progressbar_id == 1:
-            self.passenger_window.setValue(value)
+            self.passenger_window.setValue(self, value)
             print("Updated passenger window to:", value/255 * 100, '%')
         if progressbar_id == 2:
+            value = int(value[0])
             self.fuel_tank.setValue(value)
-            print("Updated fuel tank to:", value/255 * 100, '%')
 
     def update_lights_status(self, lights_id, value):
         if lights_id == 0:
@@ -229,14 +231,24 @@ class CANMonitorApp(QMainWindow):
                 self.opacity_effects[3].setOpacity(1.0) # dipped_beam_lights ON
             if value == 0:
                 self.opacity_effects[3].setOpacity(0.2) # dipped_beam_lights OFF
+        if lights_id == 2:
+            if value == 1:
+                self.opacity_effects[0].setOpacity(1.0) # left_turn_lights ON
+            if value == 0:
+                self.opacity_effects[0].setOpacity(0.2) # left_turn_lights OFF
+        if lights_id == 3:
+            if value == 1:
+                self.opacity_effects[1].setOpacity(1.0)  # right_turn_lights ON
+            if value == 0:
+                self.opacity_effects[1].setOpacity(0.2)  # right_turn_lights OFF
 
     def start_can_monitor(self):
         if not self.can_bus:
             try:
-                self.can_bus = can.interface.Bus(bustype='pcan', channel='PCAN_USBBUS1', bitrate=500000)
+                self.can_bus = can.interface.Bus(bustype='pcan', channel='PCAN_USBBUS2', bitrate=500000)
                 self.text_edit.append("CAN Monitor started...")
                 self.timer.timeout.connect(self.receive_can_frames)
-                self.timer.start(3000)
+                self.timer.start(250)
             except Exception as e:
                 self.text_edit.append("Error: " + str(e))
 
@@ -278,22 +290,31 @@ class CANMonitorApp(QMainWindow):
 
         msg_data_array = bytearray(msg_data)
         msg_data_list = [byte for byte in msg_data_array]
-        print("ID={}, data={}".format(msg_id, msg_data_list))
+        # print("ID={}, data={}".format(msg_id, msg_data_list))
         self.text_edit.append("Time: , ID={}, Data={}".format(msg_id, msg_data_list))
 
         if msg_id == self.turn_lights_id:
-            print('Test kierunkowskazow. Dane:', msg_data_list)
-            # if msg_data ==
-
-            # wylaczone swiatla 00 40 80
-            # zapalone swiatla 1F 40 80
+            if msg_data_list == [37, 64, 128]:
+                self.update_lights_status(2, 1)
+            if msg_data_list == [32, 64, 128]:
+                self.update_lights_status(2, 0)
+            if msg_data_list == [58, 64, 128]:
+                self.update_lights_status(3, 1)
+            if msg_data_list == [48, 64, 128]:
+                self.update_lights_status(3, 0)
+            if msg_data_list == [31, 64, 128]:
+                self.update_lights_status(2, 1)
+                self.update_lights_status(3, 1)
+            if msg_data_list == [0, 64, 128]:
+                self.update_lights_status(2, 0)
+                self.update_lights_status(3, 0)
 
         if msg_id == self.fuel_tank_id:
-            print('Test zbiornika paliwa. Dane:', msg_data_list)
+            self.update_progress_bar(2, msg_data_list)
 
         if msg_id == self.driver_window_id:
             print('Test okna kierowcy. Dane:', msg_data_list)
-            driver_window_level = int('msg_data_list[0]', 16)
+            driver_window_level = int('msg_data_list[0]', 16) # tu mozliwa bedzie zmiana
             print(driver_window_level)
             self.update_progress_bar(0, driver_window_level)
 
@@ -303,9 +324,16 @@ class CANMonitorApp(QMainWindow):
             print(passenger_window_level)
             self.update_progress_bar(1, passenger_window_level)
 
+        if msg_id == self.beam_lights_id:
+            if msg_data_list[0] == 1:
+                self.update_lights_status(1, 1) # dipped_beam_lights ON
+                self.update_lights_status(0, 1) # main_beam_lights OFF
 
-    # window_level = lambda hex_val: int((255 - int(hex_val, 16)) * 100 / 255)
-    # value = int('234', 16)
+            if msg_data_list[0] == 0:
+                self.update_lights_status(1, 0) # dipped_beam_lights OFF
+
+            if msg_data_list[0] == 3:
+                self.update_lights_status(0, 3) # main_beam_lights ON
 
     # def send_can_frames(self):
     #     if self.can_bus:
