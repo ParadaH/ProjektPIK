@@ -1,10 +1,9 @@
 import sys
 
 from PyQt5.QtGui import QPixmap
-from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QTextEdit, QDialog, QGridLayout, QWidget, \
-    QHBoxLayout, QTabWidget, QVBoxLayout, QGroupBox, QLabel, QStyleFactory, QComboBox, QProgressBar, \
-    QGraphicsOpacityEffect
-from PyQt5.QtCore import QTimer, QPropertyAnimation, QPoint, QThread, pyqtSignal
+from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QTextEdit, QGridLayout, QWidget, \
+    QHBoxLayout, QVBoxLayout, QGroupBox, QLabel, QProgressBar, QGraphicsOpacityEffect
+from PyQt5.QtCore import QTimer
 import can
 
 
@@ -37,9 +36,6 @@ class CANMonitorApp(QMainWindow):
 
         buttons_groupbox = self.create_button_groupbox()
         main_layout.addWidget(buttons_groupbox, 4, 0, 1, 3)
-
-        test_buttons_groupbox = self.create_test_buttons_groupbox()
-        main_layout.addWidget(test_buttons_groupbox, 5, 0, 1, 6)
 
         car_lights_groupbox = self.create_car_lights_groupbox()
         main_layout.addWidget(car_lights_groupbox, 0, 3, 1, 2)
@@ -245,7 +241,7 @@ class CANMonitorApp(QMainWindow):
     def start_can_monitor(self):
         if not self.can_bus:
             try:
-                self.can_bus = can.interface.Bus(bustype='pcan', channel='PCAN_USBBUS2', bitrate=500000)
+                self.can_bus = can.interface.Bus(bustype='pcan', channel='PCAN_USBBUS1', bitrate=500000)
                 self.text_edit.append("CAN Monitor started...")
                 self.timer.timeout.connect(self.receive_can_frames)
                 self.timer.start(250)
