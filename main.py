@@ -113,24 +113,27 @@ class CANMonitorApp(QMainWindow):
         self.right_turn_label = QLabel()
         self.main_beam_lights_label = QLabel()
         self.dipped_beam_lights_label = QLabel()
+        self.stop_light_label = QLabel()
 
         # Set path to icon
         self.left_turn_lights = QPixmap('left_turn_light.png')
         self.right_turn_lights = QPixmap('right_turn_light.png')
         self.main_beam_lights = QPixmap('main_beam_lights.png')
         self.dipped_beam_lights = QPixmap('dipped_beam_lights.png')
+        self.stop_light = QPixmap('swiatlo stop.png')
 
         # Load image icon
         self.right_turn_label.setPixmap(self.right_turn_lights)
         self.left_turn_label.setPixmap(self.left_turn_lights)
         self.main_beam_lights_label.setPixmap(self.main_beam_lights)
         self.dipped_beam_lights_label.setPixmap(self.dipped_beam_lights)
+        self.stop_light_label.setPixmap(self.stop_light)
 
         self.opacity_effects = []
         self.opacities = []
 
         labels = [self.left_turn_label, self.right_turn_label, self.main_beam_lights_label,
-                  self.dipped_beam_lights_label]
+                  self.dipped_beam_lights_label, self.stop_light_label]
 
         for label in labels:
             opacity_effect = QGraphicsOpacityEffect()
@@ -144,6 +147,7 @@ class CANMonitorApp(QMainWindow):
         car_lights_layout.addWidget(self.left_turn_label)
         car_lights_layout.addWidget(self.right_turn_label)
         car_lights_layout.addWidget(self.dipped_beam_lights_label)
+        car_lights_layout.addWidget(self.stop_light_label)
 
         return car_lights_groupbox
 
@@ -229,14 +233,19 @@ class CANMonitorApp(QMainWindow):
                 self.opacity_effects[3].setOpacity(0.2) # dipped_beam_lights OFF
         if lights_id == 2:
             if value == 1:
-                self.opacity_effects[0].setOpacity(1.0) # left_turn_lights ON
-            if value == 0:
-                self.opacity_effects[0].setOpacity(0.2) # left_turn_lights OFF
-        if lights_id == 3:
-            if value == 1:
                 self.opacity_effects[1].setOpacity(1.0)  # right_turn_lights ON
             if value == 0:
                 self.opacity_effects[1].setOpacity(0.2)  # right_turn_lights OFF
+        if lights_id == 3:
+            if value == 1:
+                self.opacity_effects[0].setOpacity(1.0) # left_turn_lights ON
+            if value == 0:
+                self.opacity_effects[0].setOpacity(0.2) # left_turn_lights OFF
+        if lights_id == 4:
+            if value == 1:
+                self.opacity_effects[0].setOpacity(1.0)
+            if value == 0:
+                self.opacity_effects[0].setOpacity(0.2)
 
     def start_can_monitor(self):
         if not self.can_bus:
@@ -270,12 +279,12 @@ class CANMonitorApp(QMainWindow):
                 msg_dlc = msg.dlc
                 msg_bitrate = msg.bitrate_switch
 
-                self.analyze_can_frame(msg_id, msg_data)
+                self.analyze_can_frame(msg_timestamp, msg_id, msg_data)
 
             except Exception as exc:
                 self.text_edit.append("Error receiving CAN frame: " + str(exc))
 
-    def analyze_can_frame(self, msg_id, msg_data):
+    def analyze_can_frame(self, msg_timestamp, msg_id, msg_data):
         self.turn_lights_id = 2
         self.brake_lights_id = 3
         self.beam_lights_id = 4
@@ -287,9 +296,10 @@ class CANMonitorApp(QMainWindow):
         msg_data_array = bytearray(msg_data)
         msg_data_list = [byte for byte in msg_data_array]
         # print("ID={}, data={}".format(msg_id, msg_data_list))
-        self.text_edit.append("Time: , ID={}, Data={}".format(msg_id, msg_data_list))
+        self.text_edit.append("Time: {}, ID={}, Data={}".format(msg_timestamp, msg_id, msg_data_list))
 
         if msg_id == self.turn_lights_id:
+            # Turn lights
             if msg_data_list == [37, 64, 128]:
                 self.update_lights_status(2, 1)
             if msg_data_list == [32, 64, 128]:
@@ -298,6 +308,8 @@ class CANMonitorApp(QMainWindow):
                 self.update_lights_status(3, 1)
             if msg_data_list == [48, 64, 128]:
                 self.update_lights_status(3, 0)
+
+            # Emergency lights
             if msg_data_list == [31, 64, 128]:
                 self.update_lights_status(2, 1)
                 self.update_lights_status(3, 1)
@@ -327,6 +339,12 @@ class CANMonitorApp(QMainWindow):
 
             if msg_data_list[0] == 3:
                 self.update_lights_status(0, 3) # main_beam_lights ON
+
+        if msg_id == self.brake_lights_id:
+            if msg_data_list[0] == 1:
+                self.update_lights_status(4, 1)
+            if msg_data_list[0] == 0:
+                self.update_lights_status(4, 0)
 
     # def send_can_frames(self):
     #     if self.can_bus:
