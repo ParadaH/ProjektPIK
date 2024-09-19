@@ -250,7 +250,7 @@ class CANMonitorApp(QMainWindow):
     def start_can_monitor(self):
         if not self.can_bus:
             try:
-                self.can_bus = can.interface.Bus(bustype='pcan', channel='PCAN_USBBUS1', bitrate=500000)
+                self.can_bus = can.interface.Bus(interface='pcan', channel='PCAN_USBBUS1', bitrate=500000)
                 self.text_edit.append("CAN Monitor started...")
                 self.timer.timeout.connect(self.receive_can_frames)
                 self.timer.start(250)
