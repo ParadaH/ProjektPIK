@@ -5,7 +5,7 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QTextEdit, Q
     QHBoxLayout, QVBoxLayout, QGroupBox, QLabel, QProgressBar, QGraphicsOpacityEffect
 from PyQt5.QtCore import QTimer
 import can
-
+ 
 
 class CANMonitorApp(QMainWindow):
 
